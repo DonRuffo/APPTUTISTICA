@@ -10,21 +10,12 @@ class VisitorHomePage extends StatefulWidget {
 }
 
 class _VisitorHomePageState extends State<VisitorHomePage> {
-  Future<List<Map<String, dynamic>>> _fetchPostsWithPhoto() async {
-    final postsRes = await Supabase.instance.client
+  Future<List<Map<String, dynamic>>> _fetchLugares() async {
+    final lugaresRes = await Supabase.instance.client
         .from('lugares')
-        .select('id, lugar, descripcion')
+        .select('id, lugar, descripcion, imagen')
         .order('created_at', ascending: false);
-    final posts = List<Map<String, dynamic>>.from(postsRes);
-    for (final post in posts) {
-      final photosRes = await Supabase.instance.client
-          .from('photos')
-          .select('url')
-          .eq('post_id', post['id'])
-          .limit(1);
-      post['photo_url'] = (photosRes.isNotEmpty) ? photosRes[0]['url'] : null;
-    }
-    return posts;
+    return List<Map<String, dynamic>>.from(lugaresRes);
   }
 
   @override
@@ -49,24 +40,24 @@ class _VisitorHomePageState extends State<VisitorHomePage> {
         ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _fetchPostsWithPhoto(),
+        future: _fetchLugares(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Error: \\${snapshot.error}'));
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
-          final posts = snapshot.data ?? [];
-          if (posts.isEmpty) {
+          final lugares = snapshot.data ?? [];
+          if (lugares.isEmpty) {
             return const Center(
               child: Text('No hay sitios turísticos publicados.'),
             );
           }
           return ListView.builder(
-            itemCount: posts.length,
+            itemCount: lugares.length,
             itemBuilder: (context, index) {
-              final post = posts[index];
+              final lugar = lugares[index];
               final reviewController = TextEditingController();
               bool isLoading = false;
               return StatefulBuilder(
@@ -79,22 +70,23 @@ class _VisitorHomePageState extends State<VisitorHomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (post['photo_url'] != null)
+                        if (lugar['imagen'] != null && lugar['imagen'].toString().isNotEmpty)
                           Image.network(
-                            post['photo_url'],
+                            lugar['imagen'],
                             height: 180,
                             width: double.infinity,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const SizedBox(
+                              height: 180,
+                              child: Center(child: Text('No se pudo cargar la imagen')),
+                            ),
                           ),
                         ListTile(
-                          title: Text(post['title'] ?? ''),
-                          subtitle: Text(post['description'] ?? ''),
+                          title: Text(lugar['lugar'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(lugar['descripcion'] ?? ''),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -114,53 +106,34 @@ class _VisitorHomePageState extends State<VisitorHomePage> {
                                       ? const SizedBox(
                                           width: 24,
                                           height: 24,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
+                                          child: CircularProgressIndicator(strokeWidth: 2),
                                         )
                                       : IconButton(
                                           icon: const Icon(Icons.send),
                                           tooltip: 'Enviar reseña',
                                           onPressed: () async {
-                                            final content = reviewController
-                                                .text
-                                                .trim();
+                                            final content = reviewController.text.trim();
                                             if (content.isEmpty) return;
                                             setState(() => isLoading = true);
                                             try {
-                                              final userId = Supabase
-                                                  .instance
-                                                  .client
-                                                  .auth
-                                                  .currentUser
-                                                  ?.id;
+                                              final userId = Supabase.instance.client.auth.currentUser?.id;
                                               await Supabase.instance.client
                                                   .from('reviews')
                                                   .insert({
-                                                    'post_id': post['id'],
+                                                    'post_id': lugar['id'],
                                                     'user_id': userId,
                                                     'content': content,
                                                   });
                                               reviewController.clear();
                                               if (context.mounted) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Reseña enviada.',
-                                                    ),
-                                                  ),
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Reseña enviada.')),
                                                 );
                                               }
                                             } catch (e) {
                                               if (context.mounted) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text('Error: $e'),
-                                                  ),
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('Error: $e')),
                                                 );
                                               }
                                             } finally {

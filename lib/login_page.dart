@@ -30,7 +30,12 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Bienvenido $userTypeFromMeta')),
           );
-          // Aquí puedes navegar a la siguiente pantalla si lo deseas
+          // Navega a la pantalla correspondiente
+          if (userTypeFromMeta == 'Publicador') {
+            Navigator.of(context).pushReplacementNamed('/crLugar');
+          } else if (userTypeFromMeta == 'Visitante') {
+            Navigator.of(context).pushReplacementNamed('/visitante');
+          }
         } else {
           // Cierra la sesión si el tipo no coincide
           await supabase.auth.signOut();

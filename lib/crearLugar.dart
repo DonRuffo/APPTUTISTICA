@@ -36,25 +36,37 @@ class _CrLugarPageState extends State<CrLugarPage> {
     }
   }
 
+  Future<void> _logout() async {
+    await supabase.auth.signOut();
+    if (mounted) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    }
+  }
+
   Future<void> pickAndUploadImage() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result != null && result.files.single.bytes != null) {
       final fileBytes = result.files.single.bytes!;
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_' + result.files.single.name;
+      final fileName =
+          DateTime.now().millisecondsSinceEpoch.toString() +
+          '_' +
+          result.files.single.name;
       try {
-        await supabase.storage.from('lugares-img').uploadBinary(fileName, fileBytes);
+        await supabase.storage
+            .from('lugares-img')
+            .uploadBinary(fileName, fileBytes);
         final url = supabase.storage.from('lugares-img').getPublicUrl(fileName);
         setState(() {
           uploadedImageUrl = url;
           _imagenController.text = url; // Mostrar la URL en el campo
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Imagen subida correctamente')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Imagen subida correctamente')));
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al subir imagen: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al subir imagen: $e')));
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -68,6 +80,13 @@ class _CrLugarPageState extends State<CrLugarPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Lugares Turisticos'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Cerrar sesión',
+            onPressed: _logout,
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -116,11 +135,17 @@ class _CrLugarPageState extends State<CrLugarPage> {
                     uploadedImageUrl = null;
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Lugar guardado exitosamente')),
+                    const SnackBar(
+                      content: Text('Lugar guardado exitosamente'),
+                    ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Completa todos los campos y sube una imagen')),
+                    const SnackBar(
+                      content: Text(
+                        'Completa todos los campos y sube una imagen',
+                      ),
+                    ),
                   );
                 }
               },
