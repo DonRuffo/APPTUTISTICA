@@ -12,10 +12,9 @@ class CrLugarPage extends StatefulWidget {
 class _CrLugarPageState extends State<CrLugarPage> {
   final TextEditingController _mensajeController = TextEditingController();
   final TextEditingController _usuarioController = TextEditingController();
-  final TextEditingController _imagenController = TextEditingController();
 
   final supabase = Supabase.instance.client;
-  String? uploadedImageUrl;
+  List<String> uploadedImageUrls = [];
 
   @override
   void initState() {
@@ -43,34 +42,50 @@ class _CrLugarPageState extends State<CrLugarPage> {
     }
   }
 
-  Future<void> pickAndUploadImage() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result != null && result.files.single.bytes != null) {
-      final fileBytes = result.files.single.bytes!;
-      final fileName =
-          DateTime.now().millisecondsSinceEpoch.toString() +
-          '_' +
-          result.files.single.name;
-      try {
-        await supabase.storage
-            .from('lugares-img')
-            .uploadBinary(fileName, fileBytes);
-        final url = supabase.storage.from('lugares-img').getPublicUrl(fileName);
-        setState(() {
-          uploadedImageUrl = url;
-          _imagenController.text = url; // Mostrar la URL en el campo
-        });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Imagen subida correctamente')));
-      } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error al subir imagen: $e')));
+  Future<void> pickAndUploadImages() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      if (result.files.length > 5) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Solo puedes seleccionar hasta 5 imágenes.'),
+          ),
+        );
+        return;
       }
+      List<String> urls = [];
+      for (final file in result.files) {
+        final fileBytes = file.bytes;
+        if (fileBytes == null) continue;
+        final fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+        try {
+          await supabase.storage
+              .from('lugares-img')
+              .uploadBinary(fileName, fileBytes);
+          final url = supabase.storage
+              .from('lugares-img')
+              .getPublicUrl(fileName);
+          urls.add(url);
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al subir ${file.name}: $e')),
+          );
+        }
+      }
+      setState(() {
+        uploadedImageUrls = urls;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Imágenes subidas correctamente')),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se seleccionó ninguna imagen')),
+        const SnackBar(content: Text('No se seleccionaron imágenes')),
       );
     }
   }
@@ -103,36 +118,46 @@ class _CrLugarPageState extends State<CrLugarPage> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _imagenController,
-                    decoration: InputDecoration(labelText: 'Imagen URL'),
-                    readOnly: true,
+                  child: Text(
+                    uploadedImageUrls.isEmpty
+                        ? 'No hay imágenes seleccionadas'
+                        : '${uploadedImageUrls.length} imagen(es) seleccionada(s)',
                   ),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: pickAndUploadImage,
-                  child: const Text('Subir Imagen'),
+                  onPressed: pickAndUploadImages,
+                  child: const Text('Subir Imágenes'),
                 ),
               ],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () async {
                 if (_usuarioController.text.isNotEmpty &&
                     _mensajeController.text.isNotEmpty &&
-                    uploadedImageUrl != null) {
-                  final data = {
-                    'lugar': _usuarioController.text,
-                    'descripcion': _mensajeController.text,
-                    'imagen': uploadedImageUrl,
-                  };
-                  await supabase.from('lugares').insert(data);
+                    uploadedImageUrls.isNotEmpty) {
+                  // 1. Insertar el lugar
+                  final lugarInsert = await supabase
+                      .from('lugares')
+                      .insert({
+                        'lugar': _usuarioController.text,
+                        'descripcion': _mensajeController.text,
+                      })
+                      .select()
+                      .single();
+                  final lugarId = lugarInsert['id'];
+                  // 2. Insertar las imágenes en la tabla imagenes_lugar
+                  for (final url in uploadedImageUrls) {
+                    await supabase.from('imagenes_lugar').insert({
+                      'lugar_id': lugarId,
+                      'url': url,
+                    });
+                  }
                   _usuarioController.clear();
                   _mensajeController.clear();
-                  _imagenController.clear();
                   setState(() {
-                    uploadedImageUrl = null;
+                    uploadedImageUrls = [];
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -143,7 +168,7 @@ class _CrLugarPageState extends State<CrLugarPage> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
-                        'Completa todos los campos y sube una imagen',
+                        'Completa todos los campos y sube al menos una imagen',
                       ),
                     ),
                   );

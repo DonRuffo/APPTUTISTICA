@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:supabase_upload_app/crearLugar.dart';
-import 'package:supabase_upload_app/visitantePage.dart';
+import 'package:ectour/crearLugar.dart';
+import 'package:ectour/visitantePage.dart';
 import 'login_page.dart';
 
 void main() async {

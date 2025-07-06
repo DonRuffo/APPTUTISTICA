@@ -11,6 +11,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final nameController = TextEditingController();
   final supabase = Supabase.instance.client;
   String userType = 'Visitante';
 
@@ -65,7 +66,10 @@ class _LoginPageState extends State<LoginPage> {
       await supabase.auth.signUp(
         email: emailController.text,
         password: passwordController.text,
-        data: {'user_type': userType},
+        data: {
+          'user_type': userType,
+          'display_name': nameController.text.trim(), // Guardar el nombre
+        },
       );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -95,6 +99,10 @@ class _LoginPageState extends State<LoginPage> {
               controller: passwordController,
               decoration: const InputDecoration(labelText: 'Contraseña'),
               obscureText: true,
+            ),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Nombre'),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
