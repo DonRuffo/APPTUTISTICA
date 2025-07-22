@@ -38,9 +38,18 @@ class _VisitorHomePageState extends State<VisitorHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Colores igual que login y crearLugar
+    const Color cafeClaro = Color(0xFFD7CCC8); // Café claro
+    const Color cafeOscuro = Color(0xFF6D4C41); // Café oscuro
+    const Color acentoVerde = Color(0xFF81C784); // Verde suave
+
     return Scaffold(
+      backgroundColor: cafeClaro,
       appBar: AppBar(
-        title: const Text('Sitios turísticos publicados'),
+        backgroundColor: cafeOscuro,
+        title: const Text('Sitios turísticos publicados', style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -64,7 +73,7 @@ class _VisitorHomePageState extends State<VisitorHomePage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('Error: [38;5;9m${snapshot.error}[0m'));
           }
           final lugares = snapshot.data ?? [];
           if (lugares.isEmpty) {
@@ -81,227 +90,205 @@ class _VisitorHomePageState extends State<VisitorHomePage> {
               return StatefulBuilder(
                 builder: (context, setState) {
                   return Card(
+                    color: Colors.white.withOpacity(0.97),
+                    elevation: 6,
                     margin: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: FutureBuilder<List<Map<String, dynamic>>>(
-                            future: _fetchImagenesLugar(lugar['id'].toString()),
-                            builder: (context, imgSnapshot) {
-                              if (imgSnapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const SizedBox(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(color: cafeOscuro.withOpacity(0.15), width: 1.5),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: FutureBuilder<List<Map<String, dynamic>>>(
+                              future: _fetchImagenesLugar(lugar['id'].toString()),
+                              builder: (context, imgSnapshot) {
+                                if (imgSnapshot.connectionState == ConnectionState.waiting) {
+                                  return const SizedBox(
+                                    height: 180,
+                                    child: Center(child: CircularProgressIndicator()),
+                                  );
+                                }
+                                if (imgSnapshot.hasError) {
+                                  return const SizedBox(
+                                    height: 180,
+                                    child: Center(child: Text('Error al cargar imágenes')),
+                                  );
+                                }
+                                final imagenes = imgSnapshot.data ?? [];
+                                if (imagenes.isEmpty) {
+                                  return const SizedBox(
+                                    height: 180,
+                                    child: Center(child: Text('Sin imágenes')),
+                                  );
+                                }
+                                return SizedBox(
                                   height: 180,
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
-                              }
-                              if (imgSnapshot.hasError) {
-                                return const SizedBox(
-                                  height: 180,
-                                  child: Center(
-                                    child: Text('Error al cargar imágenes'),
-                                  ),
-                                );
-                              }
-                              final imagenes = imgSnapshot.data ?? [];
-                              if (imagenes.isEmpty) {
-                                return const SizedBox(
-                                  height: 180,
-                                  child: Center(child: Text('Sin imágenes')),
-                                );
-                              }
-                              return SizedBox(
-                                height: 180,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: imagenes.length,
-                                  itemBuilder: (context, imgIndex) {
-                                    final url = imagenes[imgIndex]['url'];
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4.0,
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.network(
-                                          url,
-                                          width: 250,
-                                          height: 180,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) =>
-                                                  const SizedBox(
-                                                    width: 250,
-                                                    height: 180,
-                                                    child: Center(
-                                                      child: Text(
-                                                        'No se pudo cargar',
-                                                      ),
-                                                    ),
-                                                  ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        ListTile(
-                          title: Text(
-                            lugar['lugar'] ?? '',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(lugar['descripcion'] ?? ''),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
-                          ),
-                          child: FutureBuilder<List<Map<String, dynamic>>>(
-                            future: _fetchReviews(lugar['id'].toString()),
-                            builder: (context, reviewSnapshot) {
-                              if (reviewSnapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Text('Cargando reseñas...');
-                              }
-                              if (reviewSnapshot.hasError) {
-                                return Text('Error al cargar reseñas');
-                              }
-                              final reviews = reviewSnapshot.data ?? [];
-                              if (reviews.isEmpty) {
-                                return const Text('No hay reseñas aún.');
-                              }
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Reseñas:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  ...reviews.map(
-                                    (review) => Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 2.0,
-                                      ),
-                                      child: Text(
-                                        '• ${review['users']?['display_name'] ?? 'Usuario'}: ${review['content']}',
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Deja tu reseña:'),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: reviewController,
-                                      decoration: const InputDecoration(
-                                        hintText: 'Escribe tu reseña...',
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  isLoading
-                                      ? const SizedBox(
-                                          width: 24,
-                                          height: 24,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: imagenes.length,
+                                    itemBuilder: (context, imgIndex) {
+                                      final url = imagenes[imgIndex]['url'];
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Image.network(
+                                            url,
+                                            width: 250,
+                                            height: 180,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) =>
+                                                const SizedBox(
+                                                  width: 250,
+                                                  height: 180,
+                                                  child: Center(child: Text('No se pudo cargar')),
+                                                ),
                                           ),
-                                        )
-                                      : IconButton(
-                                          icon: const Icon(Icons.send),
-                                          tooltip: 'Enviar reseña',
-                                          onPressed: () async {
-                                            final content = reviewController
-                                                .text
-                                                .trim();
-                                            if (content.isEmpty) return;
-                                            final userId = Supabase
-                                                .instance
-                                                .client
-                                                .auth
-                                                .currentUser
-                                                ?.id;
-                                            if (userId == null) {
-                                              if (context.mounted) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Debes iniciar sesión para dejar una reseña.',
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                              return;
-                                            }
-                                            setState(() => isLoading = true);
-                                            try {
-                                              await guardarResena(
-                                                lugarId: lugar['id'].toString(),
-                                                userId: userId,
-                                                contenido: content,
-                                              );
-                                              reviewController.clear();
-                                              if (context.mounted) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Reseña enviada.',
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                            } catch (e) {
-                                              if (context.mounted) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text('Error: $e'),
-                                                  ),
-                                                );
-                                              }
-                                            } finally {
-                                              setState(() => isLoading = false);
-                                            }
-                                          },
                                         ),
-                                ],
-                              ),
-                            ],
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      ],
+                          ListTile(
+                            title: Text(
+                              lugar['lugar'] ?? '',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: cafeOscuro,
+                                fontSize: 20,
+                              ),
+                            ),
+                            subtitle: Text(
+                              lugar['descripcion'] ?? '',
+                              style: TextStyle(color: cafeOscuro.withOpacity(0.8)),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            child: FutureBuilder<List<Map<String, dynamic>>>(
+                              future: _fetchReviews(lugar['id'].toString()),
+                              builder: (context, reviewSnapshot) {
+                                if (reviewSnapshot.connectionState == ConnectionState.waiting) {
+                                  return const Text('Cargando reseñas...');
+                                }
+                                if (reviewSnapshot.hasError) {
+                                  return Text('Error al cargar reseñas');
+                                }
+                                final reviews = reviewSnapshot.data ?? [];
+                                if (reviews.isEmpty) {
+                                  return const Text('No hay reseñas aún.');
+                                }
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Reseñas:',
+                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    ...reviews.map(
+                                      (review) => Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                        child: Text(
+                                          '• ${review['users']?['display_name'] ?? 'Usuario'}: ${review['content']}',
+                                          style: TextStyle(fontSize: 14, color: cafeOscuro),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Deja tu reseña:'),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: reviewController,
+                                        decoration: InputDecoration(
+                                          hintText: 'Escribe tu reseña...',
+                                          filled: true,
+                                          fillColor: cafeClaro.withOpacity(0.4),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(color: cafeOscuro),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    isLoading
+                                        ? const SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          )
+                                        : IconButton(
+                                            icon: Icon(Icons.send, color: acentoVerde),
+                                            tooltip: 'Enviar reseña',
+                                            onPressed: () async {
+                                              final content = reviewController.text.trim();
+                                              if (content.isEmpty) return;
+                                              final userId = Supabase.instance.client.auth.currentUser?.id;
+                                              if (userId == null) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text('Debes iniciar sesión para dejar una reseña.'),
+                                                    ),
+                                                  );
+                                                }
+                                                return;
+                                              }
+                                              setState(() => isLoading = true);
+                                              try {
+                                                await guardarResena(
+                                                  lugarId: lugar['id'].toString(),
+                                                  userId: userId,
+                                                  contenido: content,
+                                                );
+                                                reviewController.clear();
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text('Reseña enviada.'),
+                                                    ),
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(content: Text('Error: $e')),
+                                                  );
+                                                }
+                                              } finally {
+                                                setState(() => isLoading = false);
+                                              }
+                                            },
+                                          ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

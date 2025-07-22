@@ -92,9 +92,18 @@ class _CrLugarPageState extends State<CrLugarPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Colores igual que login
+    const Color cafeClaro = Color(0xFFD7CCC8); // Café claro
+    const Color cafeOscuro = Color(0xFF6D4C41); // Café oscuro
+    const Color acentoVerde = Color(0xFF81C784); // Verde suave
+
     return Scaffold(
+      backgroundColor: cafeClaro,
       appBar: AppBar(
-        title: Text('Lugares Turisticos'),
+        backgroundColor: cafeOscuro,
+        title: const Text('Añadir Lugares Turísticos', style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -103,80 +112,148 @@ class _CrLugarPageState extends State<CrLugarPage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _usuarioController,
-              decoration: InputDecoration(labelText: 'Lugar'),
-            ),
-            TextField(
-              controller: _mensajeController,
-              decoration: InputDecoration(labelText: 'Descripción'),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    uploadedImageUrls.isEmpty
-                        ? 'No hay imágenes seleccionadas'
-                        : '${uploadedImageUrls.length} imagen(es) seleccionada(s)',
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: pickAndUploadImages,
-                  child: const Text('Subir Imágenes'),
+      body: Center(
+        child: SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.95),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: cafeOscuro.withOpacity(0.15),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () async {
-                if (_usuarioController.text.isNotEmpty &&
-                    _mensajeController.text.isNotEmpty &&
-                    uploadedImageUrls.isNotEmpty) {
-                  // 1. Insertar el lugar
-                  final lugarInsert = await supabase
-                      .from('lugares')
-                      .insert({
-                        'lugar': _usuarioController.text,
-                        'descripcion': _mensajeController.text,
-                      })
-                      .select()
-                      .single();
-                  final lugarId = lugarInsert['id'];
-                  // 2. Insertar las imágenes en la tabla imagenes_lugar
-                  for (final url in uploadedImageUrls) {
-                    await supabase.from('imagenes_lugar').insert({
-                      'lugar_id': lugarId,
-                      'url': url,
-                    });
-                  }
-                  _usuarioController.clear();
-                  _mensajeController.clear();
-                  setState(() {
-                    uploadedImageUrls = [];
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Lugar guardado exitosamente'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.place, size: 64, color: cafeOscuro),
+                const SizedBox(height: 12),
+                Text(
+                  'Nuevo Lugar',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: cafeOscuro,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _usuarioController,
+                  decoration: InputDecoration(
+                    labelText: 'Lugar',
+                    prefixIcon: Icon(Icons.location_on, color: cafeOscuro),
+                    filled: true,
+                    fillColor: cafeClaro.withOpacity(0.4),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: cafeOscuro),
                     ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Completa todos los campos y sube al menos una imagen',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _mensajeController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: 'Descripción',
+                    prefixIcon: Icon(Icons.description, color: cafeOscuro),
+                    filled: true,
+                    fillColor: cafeClaro.withOpacity(0.4),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: cafeOscuro),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        uploadedImageUrls.isEmpty
+                            ? 'No hay imágenes seleccionadas'
+                            : '${uploadedImageUrls.length} imagen(es) seleccionada(s)',
+                        style: TextStyle(color: cafeOscuro),
                       ),
                     ),
-                  );
-                }
-              },
-              child: Text('Enviar'),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: acentoVerde,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: pickAndUploadImages,
+                      child: const Text('Subir Imágenes'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cafeOscuro,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () async {
+                      if (_usuarioController.text.isNotEmpty &&
+                          _mensajeController.text.isNotEmpty &&
+                          uploadedImageUrls.isNotEmpty) {
+                        // 1. Insertar el lugar
+                        final lugarInsert = await supabase
+                            .from('lugares')
+                            .insert({
+                              'lugar': _usuarioController.text,
+                              'descripcion': _mensajeController.text,
+                            })
+                            .select()
+                            .single();
+                        final lugarId = lugarInsert['id'];
+                        // 2. Insertar las imágenes en la tabla imagenes_lugar
+                        for (final url in uploadedImageUrls) {
+                          await supabase.from('imagenes_lugar').insert({
+                            'lugar_id': lugarId,
+                            'url': url,
+                          });
+                        }
+                        _usuarioController.clear();
+                        _mensajeController.clear();
+                        setState(() {
+                          uploadedImageUrls = [];
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Lugar guardado exitosamente'),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Completa todos los campos y sube al menos una imagen',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text('Enviar', style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
